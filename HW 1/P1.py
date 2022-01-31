@@ -51,13 +51,15 @@ class Sigmoid(Activation):
     """
     def __init__(self):
         super(Sigmoid, self).__init__()
+        self.x = 0
 
     def forward(self, x):
         # hint: save the useful data for back propagation
-        pass
+        self.x = x
+        return 1/(1+np.exp(-x))
 
     def derivative(self):
-        pass
+        return self.forward(self,self.x)*(1-self.forward(self,self.x))
 
 
 class Tanh(Activation):
@@ -68,12 +70,14 @@ class Tanh(Activation):
 
     def __init__(self):
         super(Tanh, self).__init__()
+        self.x = 0
 
     def forward(self, x):
-        pass
+        self.x = x
+        return (np.exp(x)-np.exp(-x))/(np.exp(x)+np.exp(-x))
 
     def derivative(self):
-        pass
+        return 1-(self.forward(self,self.x)**2)
 
 
 class ReLU(Activation):
@@ -84,12 +88,20 @@ class ReLU(Activation):
 
     def __init__(self):
         super(ReLU, self).__init__()
+        self.x = 0
 
     def forward(self, x):
-        pass
+        self.x = x
+        if self.x>0:
+            return x
+        else:
+            return 0
 
     def derivative(self):
-        pass
+        if self.x>0:
+            return 1
+        else:
+            return 0
 
 
 class Criterion(object):
@@ -124,22 +136,36 @@ class SoftmaxCrossEntropy(Criterion):
     def __init__(self):
         super(SoftmaxCrossEntropy, self).__init__()
         # you can add variables if needed
+        self.x = 0
+        self.y = 0
+
+    def softmax(x):
+        ex = np.exp(x)
+        return ex/np.sum(ex)
 
     def forward(self, x, y):
-        pass
+        x = self.x
+        y = self.y
+        out_shape = y.shape[0]
+        soft = self.softmax(x)
+        return np.sum(-np.log(soft[range(out_shape),y]))/out_shape
 
     def derivative(self):
-        pass
+        grad = self.softmax(self.x)
+        out_shape = self.y
+        out_shape = out_shape.shape[0]
+        grad[range(out_shape),self.y] -= 1
+        return grad/out_shape
 
 
 # randomly intialize the weight matrix with dimension d0 x d1 via Normal distribution
 def random_normal_weight_init(d0, d1):
-    return NotImplementedError
+    return np.random.normal(size=(d0,d1))
 
 
 # initialize a d-dimensional bias vector with all zeros
 def zeros_bias_init(d):
-    return NotImplementedError
+    return np.zeros(d)
 
 
 class MLP(object):

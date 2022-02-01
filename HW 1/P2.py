@@ -41,11 +41,19 @@ class CNN(nn.Module):
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout2d(p=0.05),
+
+            # Conv Layer block 4
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
         )
 
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(4096, 1024),
+            nn.Linear(8192, 1024),
             nn.ReLU(inplace=True),
             nn.Linear(1024, 512),
             nn.ReLU(inplace=True),
@@ -91,18 +99,10 @@ def main():
     if train_on_gpu:
         model.cuda()
     optimizer = optim.SGD(model.parameters(), lr=1e-2 )
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer,[6,12,18,24],gamma=0.5,verbose=True)
 
-    num_epoch = 40
+    num_epoch = 30
     for epoch in range(num_epoch):  # loop over the dataset multiple times
-        if epoch==10:
-            for g in optimizer.param_groups:
-                g['lr']=1e-3
-        if epoch==15:
-            for g in optimizer.param_groups:
-                g['lr']=1e-4
-        if epoch==40:
-            for g in optimizer.param_groups:
-                g['lr']=1e-5
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]
@@ -118,11 +118,12 @@ def main():
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+            scheduler.step()
 
             # print statistics
             running_loss += loss.item()
             if i % 2000 == 1999:  # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
+                print('[%d, %5d] loss: %.5f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
 

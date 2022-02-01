@@ -118,7 +118,7 @@ def main():
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            scheduler.step()
+            
 
             # print statistics
             running_loss += loss.item()
@@ -126,6 +126,7 @@ def main():
                 print('[%d, %5d] loss: %.5f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
+        scheduler.step()
 
     print('Finished Training')
 

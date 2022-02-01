@@ -90,10 +90,19 @@ def main():
     model = CNN()
     if train_on_gpu:
         model.cuda()
-    optimizer = optim.SGD(model.parameters(), lr=2e-3 )
+    optimizer = optim.SGD(model.parameters(), lr=1e-2 )
 
-    num_epoch = 20
+    num_epoch = 40
     for epoch in range(num_epoch):  # loop over the dataset multiple times
+        if epoch==10:
+            for g in optimizer.param_groups:
+                g['lr']=1e-3
+        if epoch==15:
+            for g in optimizer.param_groups:
+                g['lr']=1e-4
+        if epoch==40:
+            for g in optimizer.param_groups:
+                g['lr']=1e-5
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
             # get the inputs; data is a list of [inputs, labels]

@@ -41,19 +41,13 @@ class CNN(nn.Module):
             nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout2d(p=0.05),
-
-            # Conv Layer block 4
-            nn.Conv2d(in_channels=256, out_channels=384, kernel_size=3, padding=1),
-            nn.BatchNorm2d(384),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=384, out_channels=384, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
         )
 
         self.fc_layer = nn.Sequential(
             nn.Dropout(p=0.1),
-            nn.Linear(6144, 1024),
+            nn.Linear(4096, 8192),
+            nn.ReLU(inplace=True),
+            nn.Linear(8192, 1024),
             nn.ReLU(inplace=True),
             nn.Linear(1024, 512),
             nn.ReLU(inplace=True),
@@ -99,7 +93,7 @@ def main():
     if train_on_gpu:
         model.cuda()
     optimizer = optim.SGD(model.parameters(), lr=1e-2 )
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer,[8,15,30,45],gamma=0.1,verbose=True)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer,[8,15,25,40],gamma=0.1,verbose=True)
 
     num_epoch = 50
     for epoch in range(num_epoch):  # loop over the dataset multiple times

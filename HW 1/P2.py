@@ -12,48 +12,41 @@ if not train_on_gpu:
 else:
     print('CUDA is available!  Training on GPU ...')
 
-class CNN(nn.Module):
+def layers_maker():
+    cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
+    layers =[]
+    in_channels=3
+    for x in cfg:
+        if x == 'M':
+            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        else:
+            layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
+                        nn.BatchNorm2d(x),
+                        nn.ReLU(inplace=True)]
+            in_channels = x
+        layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
+    return nn.Sequential(*layers)
+
+def accuracy(model,testloader):
+    correct = 0 
+    total = 0
+    for data in testloader:
+            images, labels = data
+            if train_on_gpu:
+                images, labels = images.cuda(), labels.cuda()
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    print('acc = %.3f' %(correct/total))
+
+class CNN(nn.Module):  
     def __init__(self):
         super(CNN, self).__init__()
-        self.conv_layer = nn.Sequential(
-
-            # Conv Layer block 1
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Conv Layer block 2
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout2d(p=0.05),
-
-            # Conv Layer block 3
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
+        self.conv_layer = layers_maker()
 
         self.fc_layer = nn.Sequential(
-            nn.Dropout(p=0.1),
-            nn.Linear(4096, 1024),
-            nn.ReLU(inplace=True),
-            nn.Linear(1024,1024),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=0.1),
-            nn.Linear(1024, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=0.1),
-            nn.Linear(512, 10)
+            nn.Linear(512,10)
         )
 
     def forward(self, x):
@@ -71,18 +64,20 @@ class CNN(nn.Module):
 
 def main():
     # load and transform dataset
-    transform = transforms.Compose(
-        [transforms.ToTensor(),
+    transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                             download=True, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=128,
                                               shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root='./data', train=False,
                                            download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=4,
+    testloader = torch.utils.data.DataLoader(testset, batch_size=100,
                                              shuffle=False, num_workers=2)
 
     classes = ('plane', 'car', 'bird', 'cat',
@@ -93,10 +88,11 @@ def main():
     model = CNN()
     if train_on_gpu:
         model.cuda()
-    optimizer = optim.SGD(model.parameters(), lr=1e-2 )
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer,[8,15,25,40],gamma=0.1,verbose=True)
+    optimizer = optim.SGD(model.parameters(), lr=1e-1,
+                      momentum=0.9, weight_decay=5e-4)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
 
-    num_epoch = 50
+    num_epoch = 200
     for epoch in range(num_epoch):  # loop over the dataset multiple times
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
@@ -121,7 +117,9 @@ def main():
                 print('[%d, %5d] loss: %.5f' %
                       (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
+        print('Epoch = %d | loss = %.4f'%(epoch+1,running_loss/len(trainloader)))
         scheduler.step()
+        accuracy(model,testloader)
 
     print('Finished Training')
 

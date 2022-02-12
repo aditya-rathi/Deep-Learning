@@ -51,15 +51,14 @@ class Sigmoid(Activation):
     """
     def __init__(self):
         super(Sigmoid, self).__init__()
-        self.x = 0
 
     def forward(self, x):
         # hint: save the useful data for back propagation
-        self.x = x
+        self.state = x
         return 1/(1+np.exp(-x))
 
     def derivative(self):
-        return self.forward(self,self.x)*(1-self.forward(self,self.x))
+        return self.forward(self,self.state)*(1-self.forward(self,self.state))
 
 
 class Tanh(Activation):
@@ -70,14 +69,13 @@ class Tanh(Activation):
 
     def __init__(self):
         super(Tanh, self).__init__()
-        self.x = 0
 
     def forward(self, x):
-        self.x = x
+        self.state = x
         return (np.exp(x)-np.exp(-x))/(np.exp(x)+np.exp(-x))
 
     def derivative(self):
-        return 1-(self.forward(self,self.x)**2)
+        return 1-np.power(self.forward(self,self.state),2)
 
 
 class ReLU(Activation):
@@ -88,20 +86,18 @@ class ReLU(Activation):
 
     def __init__(self):
         super(ReLU, self).__init__()
-        self.x = 0
 
     def forward(self, x):
-        self.x = x
-        if self.x>0:
-            return x
-        else:
-            return 0
+        self.state = x
+        out = np.maximum(0,x)
+        return out
 
     def derivative(self):
-        if self.x>0:
-            return 1
-        else:
-            return 0
+        out = self.state
+        out[out>0] = 1
+        out[out<0] = 0
+        return out
+        
 
 
 class Criterion(object):
@@ -136,25 +132,24 @@ class SoftmaxCrossEntropy(Criterion):
     def __init__(self):
         super(SoftmaxCrossEntropy, self).__init__()
         # you can add variables if needed
-        self.x = 0
-        self.y = 0
 
     def softmax(x):
         ex = np.exp(x)
         return ex/np.sum(ex)
 
     def forward(self, x, y):
-        x = self.x
-        y = self.y
+        self.logits = x
+        self.labels = y
         out_shape = y.shape[0]
-        soft = self.softmax(x)
-        return np.sum(-np.log(soft[range(out_shape),y]))/out_shape
+        soft = self.softmax(self.logits)
+        self.loss = np.sum(-np.log(soft[range(out_shape),y]))/out_shape
+        return self.loss
 
     def derivative(self):
-        grad = self.softmax(self.x)
-        out_shape = self.y
+        grad = self.softmax(self.logits)
+        out_shape = self.labels
         out_shape = out_shape.shape[0]
-        grad[range(out_shape),self.y] -= 1
+        grad[range(out_shape),self.labels] -= 1
         return grad/out_shape
 
 
@@ -199,9 +194,15 @@ class MLP(object):
         self.db = [np.zeros_like(bias) for bias in self.b]
 
         # You can add more variables if needed
+        self.relu = ReLU
 
     def forward(self, x):
-        return NotImplementedError
+        for i,w in enumerate(self.W):
+            out = x*w+self.b[i]
+            out = self.activations[i](out)
+        out = self.criterion(out)
+        return(out)
+
 
     def zero_grads(self):
         # set dW and db to be zero

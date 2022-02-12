@@ -1,5 +1,6 @@
 # Do not import any additional 3rd party external libraries
 from cProfile import label
+from tkinter import W
 from wsgiref.handlers import format_date_time
 import numpy as np
 import os
@@ -60,7 +61,7 @@ class Sigmoid(Activation):
         return 1/(1+np.exp(-x))
 
     def derivative(self):
-        return self.forward(self,self.state)*(1-self.forward(self,self.state))
+        return self.forward(self.state)*(1-self.forward(self.state))
 
 
 class Tanh(Activation):
@@ -77,7 +78,7 @@ class Tanh(Activation):
         return (np.exp(x)-np.exp(-x))/(np.exp(x)+np.exp(-x))
 
     def derivative(self):
-        return 1-np.power(self.forward(self,self.state),2)
+        return 1-np.power(self.forward(self.state),2)
 
 
 class ReLU(Activation):
@@ -135,7 +136,7 @@ class SoftmaxCrossEntropy(Criterion):
         super(SoftmaxCrossEntropy, self).__init__()
         # you can add variables if needed
 
-    def softmax(x):
+    def softmax(self, x):
         ex = np.exp(x)
         return ex/np.sum(ex)
 
@@ -144,14 +145,14 @@ class SoftmaxCrossEntropy(Criterion):
         self.labels = y
         out_shape = y.shape[0]
         soft = self.softmax(self.logits)
-        self.loss = np.sum(-np.log(soft[range(out_shape),y]))/out_shape
+        self.loss = np.sum(-np.log(soft[range(out_shape),np.argmax(y,axis=1)]))/out_shape
         return self.loss
 
     def derivative(self):
         grad = self.softmax(self.logits)
         out_shape = self.labels
         out_shape = out_shape.shape[0]
-        grad[range(out_shape),self.labels] -= 1
+        grad[range(out_shape),np.argmax(self.labels,axis=1)] -= 1
         return grad/out_shape
 
 
@@ -197,13 +198,19 @@ class MLP(object):
 
         # You can add more variables if needed
         self.f_data= np.zeros(output_size)
+        self.Zn = [0]*len(self.W)
+        self.An = [0]*len(self.W)
+        self.input = 0
 
     def forward(self, x):
         out = x
+        self.input = x
         for i,w in enumerate(self.W):
             out = out@w+self.b[i]
+            self.Zn[i] = out
             out = self.activations[i](out)
-        self.f_data
+            self.An[i] = out
+        self.f_data = out
 
 
     def zero_grads(self):
@@ -211,13 +218,24 @@ class MLP(object):
         self.b = np.zeros_like(self.b)
 
     def step(self):     
-        # update the W and b on each layer
-        return NotImplementedError
+        self.W -= self.lr*self.dW
+        self.b -= self.lr*self.db
 
     def backward(self, labels):
         if self.train_mode:
             # calculate dW and db only under training mode
-            pass
+            loss = self.get_loss(labels)
+            for l in range(self.nlayers-1,-1,-1):
+                self.activations[l].state = self.Zn[l]
+                if l!=(self.nlayers-1):
+                    dl = self.activations[l].derivative()*(self.W[l+1]@dl.T) 
+                else:
+                    dl = (self.An[l]-labels)*self.activations[l].derivative()
+                self.db[l] = dl
+                if l!=0:
+                    self.dW[l] = self.An[l-1].T @ dl
+                else:
+                    self.dW[l] = (self.input).T @ dl
         return
 
     def __call__(self, x):
@@ -238,7 +256,9 @@ class MLP(object):
     def get_error(self, labels):
         # return the number of incorrect preidctions gievn labels
         pred = self.criterion.softmax(self.f_data)
-        return NotImplementedError
+        pred = np.argmax(pred,axis=1)
+        labels_correct = np.argmax(labels,axis=1)
+        return np.sum(pred!=labels_correct)
 
     def save_model(self, path='p1_model.npz'):
         # save the parameters of MLP (do not change)

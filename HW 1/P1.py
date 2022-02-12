@@ -1,4 +1,6 @@
 # Do not import any additional 3rd party external libraries
+from cProfile import label
+from wsgiref.handlers import format_date_time
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -194,19 +196,19 @@ class MLP(object):
         self.db = [np.zeros_like(bias) for bias in self.b]
 
         # You can add more variables if needed
-        self.relu = ReLU
+        self.f_data= np.zeros(output_size)
 
     def forward(self, x):
+        out = x
         for i,w in enumerate(self.W):
-            out = x*w+self.b[i]
+            out = out@w+self.b[i]
             out = self.activations[i](out)
-        out = self.criterion(out)
-        return(out)
+        self.f_data
 
 
     def zero_grads(self):
-        # set dW and db to be zero
-        return NotImplementedError
+        self.dW = np.zeros_like(self.dW)
+        self.b = np.zeros_like(self.b)
 
     def step(self):     
         # update the W and b on each layer
@@ -231,10 +233,11 @@ class MLP(object):
 
     def get_loss(self, labels):
         # return the current loss value given labels
-        return NotImplementedError
+        return self.criterion(self.f_data,labels)
 
     def get_error(self, labels):
         # return the number of incorrect preidctions gievn labels
+        pred = self.criterion.softmax(self.f_data)
         return NotImplementedError
 
     def save_model(self, path='p1_model.npz'):

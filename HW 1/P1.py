@@ -218,8 +218,8 @@ class MLP(object):
         self.b = np.zeros_like(self.b)
 
     def step(self):     
-        self.W -= self.lr*self.dW
-        self.b -= self.lr*self.db
+        self.W = [w - self.lr*dw for (w,dw) in zip(self.W,self.dW)]
+        self.b = [b - self.lr*db for (b,db) in zip(self.b,self.db)]
 
     def backward(self, labels):
         if self.train_mode:
@@ -228,10 +228,10 @@ class MLP(object):
             for l in range(self.nlayers-1,-1,-1):
                 self.activations[l].state = self.Zn[l]
                 if l!=(self.nlayers-1):
-                    dl = self.activations[l].derivative()*(self.W[l+1]@dl.T) 
+                    dl = self.activations[l].derivative()*(self.W[l+1]@dl.T).T
                 else:
                     dl = (self.An[l]-labels)*self.activations[l].derivative()
-                self.db[l] = dl
+                self.db[l] = np.mean(dl,axis=0,keepdims=False)
                 if l!=0:
                     self.dW[l] = self.An[l-1].T @ dl
                 else:

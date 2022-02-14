@@ -12,21 +12,6 @@ if not train_on_gpu:
 else:
     print('CUDA is available!  Training on GPU ...')
 
-def layers_maker():
-    cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
-    layers =[]
-    in_channels=3
-    for x in cfg:
-        if x == 'M':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-        else:
-            layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                        nn.BatchNorm2d(x),
-                        nn.ReLU(inplace=True)]
-            in_channels = x
-        layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
-    return nn.Sequential(*layers)
-
 def accuracy(model,testloader):
     correct = 0 
     total = 0
@@ -59,7 +44,7 @@ class CNN(nn.Module):
         nn.ReLU(inplace=True),
         nn.AvgPool2d(kernel_size=1, stride=1, padding=0),
         nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
-        nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+        nn.BatchNorm2d(128),
         nn.ReLU(inplace=True),
         nn.AvgPool2d(kernel_size=1, stride=1, padding=0),
         nn.MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False),

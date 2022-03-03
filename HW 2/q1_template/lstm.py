@@ -28,8 +28,8 @@ class FlowLSTM(nn.Module):
         input: x of dim (batch_size, 19, 17)
         '''
         self.timesteps = x.shape[1]
-        self.h_0 = torch.randn(x.shape[0],self.hidden_size).to(self.device)
-        self.c_0 = torch.randn(x.shape[0],self.hidden_size).to(self.device)
+        self.h_0 = torch.zeros(x.shape[0],self.hidden_size).to(self.device)
+        self.c_0 = torch.zeros(x.shape[0],self.hidden_size).to(self.device)
         out_final = []
         for i in range(self.timesteps):
             self.h_0,self.c_0 = self.lstm1(x[:,i,:],(self.h_0,self.c_0))
@@ -46,8 +46,8 @@ class FlowLSTM(nn.Module):
         input: x of dim (batch_size, 17)
         '''
         pred = x
-        c_1 = self.c_0
-        h_1 = self.h_0
+        h_1 = torch.zeros(x.shape[0],self.hidden_size).to(self.device)
+        c_1 = torch.zeros(x.shape[0],self.hidden_size).to(self.device)
         out = []
         # define your feedforward pass
         for i in range(self.timesteps):

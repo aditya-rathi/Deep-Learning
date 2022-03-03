@@ -50,9 +50,10 @@ class FlowLSTM(nn.Module):
         c_1 = torch.zeros(x.shape[0],self.hidden_size).to(self.device)
         out = []
         # define your feedforward pass
-        for i in range(self.timesteps):
-            h_1,c_1 = self.lstm1(pred,(h_1,c_1))
-            pred = self.dense(h_1)
-            out.append(pred)
+        with torch.no_grad():
+            for i in range(self.timesteps):
+                h_1,c_1 = self.lstm1(pred,(h_1,c_1))
+                pred = self.dense(h_1)
+                out.append(pred)
         out = torch.stack(out,dim=1)
         return out

@@ -36,7 +36,7 @@ def main():
     ).to(device)
 
     # define your LSTM loss function here
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
 
     # define optimizer for lstm model
     optim = Adam(model.parameters(), lr=lr)

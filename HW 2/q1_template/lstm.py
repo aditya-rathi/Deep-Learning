@@ -18,7 +18,7 @@ class FlowLSTM(nn.Module):
         self.dropout = dropout
         self.device = device
 
-        self.lstm1 = nn.LSTMCell(input_size,hidden_size,num_layers,batch_first=True)
+        self.lstm1 = nn.LSTMCell(input_size,hidden_size,num_layers)
         self.dense = nn.Linear(self.hidden_size,self.input_size)
 
 
@@ -32,12 +32,12 @@ class FlowLSTM(nn.Module):
         self.c_0 = torch.randn(x.shape[0],self.hidden_size).to(self.device)
         out_final = []
         for i in range(self.timesteps):
-            self.h_0,self.c_0 = self.lstm1(x[i],(self.h_0,self.c_0))
+            self.h_0,self.c_0 = self.lstm1(x[:,i,:],(self.h_0,self.c_0))
             out = self.dense(self.h_0)
-            out_final.append[out]
+            out_final.append(out)
         out_final = torch.stack(out_final,dim=1)
         # define your feedforward pass
-        return out
+        return out_final
 
 
     # forward pass through LSTM layer for testing

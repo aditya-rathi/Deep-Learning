@@ -31,11 +31,12 @@ def main():
         input_size=input_size, 
         hidden_size=hidden_size, 
         num_layers=num_layers, 
-        dropout=dropout
+        dropout=dropout,
+        device = device
     ).to(device)
 
     # define your LSTM loss function here
-    # loss_func = ?
+    criterion = nn.CrossEntropyLoss()
 
     # define optimizer for lstm model
     optim = Adam(model.parameters(), lr=lr)
@@ -45,10 +46,10 @@ def main():
             in_batch, label = in_batch.to(device), label.to(device)
 
            # train LSTM
-
+            pred = model(in_batch)
             # calculate LSTM loss
             # loss = loss_func(...)
-
+            loss = criterion(pred,label)
             optim.zero_grad()
             loss.backward()
             optim.step()

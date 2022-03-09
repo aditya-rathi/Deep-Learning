@@ -40,6 +40,7 @@ def main():
 
     # define optimizer for lstm model
     optim = Adam(model.parameters(), lr=lr)
+    loss_tot = []
 
     for epoch in range(num_epochs):
         for n_batch, (in_batch, label) in enumerate(train_loader):
@@ -59,6 +60,7 @@ def main():
             if (n_batch + 1) % 200 == 0:
                 print("Epoch: [{}/{}], Batch: {}, Loss: {}".format(
                     epoch, num_epochs, n_batch, loss.item()))
+        loss_tot.append(loss.item())
 
     # test trained LSTM model
     l1_err, l2_err = 0, 0
@@ -108,6 +110,12 @@ def main():
     plt.xlabel('velocity [m/s]')
     plt.ylabel('r [m]')
     plt.legend(bbox_to_anchor=(1,1),fontsize='x-small')
+    plt.show()
+
+    plt.figure()
+    plt.plot(range(num_epochs),loss_tot)
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
     plt.show()
 
 

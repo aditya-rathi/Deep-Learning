@@ -6,7 +6,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from dataset import FlowDataset
-from lstm_ruchi import FlowLSTM
+from lstm import FlowLSTM
 
 
 def main():
@@ -67,7 +67,7 @@ def main():
         'state_dict': model.state_dict(),
         'optimizer' : optim.state_dict(),
         'loss': loss.item()}
-    torch.save(checkpoint,'p1_model_ruchi.ckpt')
+    torch.save(checkpoint,'p1_model.ckpt')
 
     # test trained LSTM model
     l1_err, l2_err = 0, 0

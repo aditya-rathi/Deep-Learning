@@ -1,4 +1,6 @@
 import os
+from pickle import TRUE
+from cv2 import reduce
 import numpy as np
 import torch
 from torch import nn
@@ -6,7 +8,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader
 
 from dataset import FlowDataset
-from lstm_ruchi import FlowLSTM
+from lstm import FlowLSTM
 
 
 def main():
@@ -36,21 +38,21 @@ def main():
     ).to(device)
 
     # define your LSTM loss function here
-    criterion = nn.MSELoss()
+    loss_func = nn.MSELoss()
 
     # define optimizer for lstm model
     optim = Adam(model.parameters(), lr=lr)
-    loss_tot = []
 
     for epoch in range(num_epochs):
         for n_batch, (in_batch, label) in enumerate(train_loader):
             in_batch, label = in_batch.to(device), label.to(device)
 
-           # train LSTM
+            # train LSTM
             pred = model(in_batch)
+
             # calculate LSTM loss
-            # loss = loss_func(...)
-            loss = criterion(pred,label)
+            loss = loss_func(pred,label)
+
             optim.zero_grad()
             loss.backward()
             optim.step()
@@ -60,14 +62,6 @@ def main():
             if (n_batch + 1) % 200 == 0:
                 print("Epoch: [{}/{}], Batch: {}, Loss: {}".format(
                     epoch, num_epochs, n_batch, loss.item()))
-        loss_tot.append(loss.item())
-    
-    checkpoint = {
-        'epoch': num_epochs,
-        'state_dict': model.state_dict(),
-        'optimizer' : optim.state_dict(),
-        'loss': loss.item()}
-    torch.save(checkpoint,'p1_model_ruchi.ckpt')
 
     # test trained LSTM model
     l1_err, l2_err = 0, 0
@@ -117,12 +111,6 @@ def main():
     plt.xlabel('velocity [m/s]')
     plt.ylabel('r [m]')
     plt.legend(bbox_to_anchor=(1,1),fontsize='x-small')
-    plt.show()
-
-    plt.figure()
-    plt.plot(range(num_epochs),loss_tot)
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
     plt.show()
 
 

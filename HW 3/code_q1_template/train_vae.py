@@ -4,18 +4,26 @@ train and test VAE model on airfoils
 
 import torch
 import torch.nn as nn
+from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 
 from dataset import AirfoilDataset
 from vae import VAE
 from utils import *
 
+def loss_func(recon_x, label, mu, logvar):
+    bce = F.mse_loss(recon_x,label,reduction="sum")
+    kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    return bce+0.008*kld
+
 
 def main():
     # check if cuda available
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    #device = 'cpu'
 
     # define dataset and dataloader
     dataset = AirfoilDataset()
@@ -25,8 +33,8 @@ def main():
 
     # hyperparameters
     latent_dim = 16 # please do not change latent dimension
-    lr = 0.001      # learning rate
-    num_epochs = 30
+    lr = 0.003      # learning rate
+    num_epochs = 40
 
     # build the model
     vae = VAE(airfoil_dim=airfoil_dim, latent_dim=latent_dim).to(device)
@@ -37,6 +45,7 @@ def main():
 
     # define optimizer for discriminator and generator separately
     optim = Adam(vae.parameters(), lr=lr)
+    #scheduler = ReduceLROnPlateau(optim)
     
     # train the VAE model
     for epoch in range(num_epochs):
@@ -44,6 +53,8 @@ def main():
             y_real = local_batch.to(device)
 
             # train VAE
+            recon, mu, logvar = vae(y_real)
+            loss = loss_func(recon, y_real, mu, logvar)
 
             # calculate customized VAE loss
             # loss = your_loss_func(...)
@@ -56,6 +67,7 @@ def main():
             if (n_batch + 1) % 30 == 0:
                 print("Epoch: [{}/{}], Batch: {}, loss: {}".format(
                     epoch, num_epochs, n_batch, loss.item()))
+        #scheduler.step(loss.item())
 
     # test trained VAE model
     num_samples = 100

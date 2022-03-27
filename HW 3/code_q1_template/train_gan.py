@@ -7,15 +7,18 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 import numpy as np
+from torch.autograd import Variable
 
 from dataset import AirfoilDataset
 from gan import Discriminator, Generator
 from utils import *
 
 
+
 def main():
     # check if cuda available
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    #Tensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
     # define dataset and dataloader
     dataset = AirfoilDataset()
@@ -25,9 +28,9 @@ def main():
 
     # hyperparameters
     latent_dim = 16 # please do not change latent dimension
-    lr_dis = 0.0005 # discriminator learning rate
-    lr_gen = 0.0005 # generator learning rate
-    num_epochs = 60
+    lr_dis = 0.001 # discriminator learning rate
+    lr_gen = 0.0002 # generator learning rate
+    num_epochs = 100
     
     # build the model
     dis = Discriminator(input_dim=airfoil_dim).to(device)
@@ -38,6 +41,7 @@ def main():
     # define your GAN loss function here
     # you may need to define your own GAN loss function/class
     # loss = ?
+    loss = nn.BCELoss()
 
     # define optimizer for discriminator and generator separately
     optim_dis = Adam(dis.parameters(), lr=lr_dis)
@@ -48,8 +52,20 @@ def main():
         for n_batch, (local_batch, __) in enumerate(airfoil_dataloader):
             y_real = local_batch.to(device)
 
-            # train discriminator
+            #Ground Truths
+            valid = torch.Tensor(y_real.size(0),1).fill_(1.0).to(device)
+            fake = torch.Tensor(y_real.size(0),1).fill_(0.0).to(device)
 
+            #Sample noise
+            z = torch.Tensor(np.random.normal(0,1,(y_real.shape[0],latent_dim))).to(device)
+
+            # Generate a batch of images
+            gen_imgs = gen(z)
+
+            # train discriminator
+            real_loss = loss(dis(y_real), valid)
+            fake_loss = loss(dis(gen_imgs.detach()), fake)
+            loss_dis = (real_loss + fake_loss) / 2
             # calculate customized GAN loss for discriminator
             # enc_loss = loss(...)
 
@@ -61,6 +77,7 @@ def main():
 
             # calculate customized GAN loss for generator
             # enc_loss = loss(...)
+            loss_gen = loss(dis(gen_imgs),valid)
 
             optim_gen.zero_grad()
             loss_gen.backward()
@@ -68,7 +85,7 @@ def main():
 
             # print loss while training
             if (n_batch + 1) % 30 == 0:
-                print("Epoch: [{}/{}], Batch: {}, Discriminator loss: {}, Generator loss: {}".format(
+                print("Epoch: [{}/{}], Batch: {}, Discriminator loss: {:.3f}, Generator loss: {:.3f}".format(
                     epoch, num_epochs, n_batch, loss_dis.item(), loss_gen.item()))
 
     # test trained GAN model

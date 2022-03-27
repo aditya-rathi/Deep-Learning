@@ -12,6 +12,8 @@ from torch.autograd import Variable
 from dataset import AirfoilDataset
 from gan import Discriminator, Generator
 from utils import *
+import matplotlib.pyplot as plt
+
 
 
 
@@ -42,6 +44,8 @@ def main():
     # you may need to define your own GAN loss function/class
     # loss = ?
     loss = nn.BCELoss()
+    loss_epoch_gen = []
+    loss_epoch_dis = []
 
     # define optimizer for discriminator and generator separately
     optim_dis = Adam(dis.parameters(), lr=lr_dis)
@@ -87,6 +91,8 @@ def main():
             if (n_batch + 1) % 30 == 0:
                 print("Epoch: [{}/{}], Batch: {}, Discriminator loss: {:.3f}, Generator loss: {:.3f}".format(
                     epoch, num_epochs, n_batch, loss_dis.item(), loss_gen.item()))
+        loss_epoch_gen.append(loss_gen.item())
+        loss_epoch_dis.append(loss_dis.item())
 
     # test trained GAN model
     num_samples = 100
@@ -101,6 +107,21 @@ def main():
 
     # plot generated airfoils
     plot_airfoils(airfoil_x, gen_airfoils)
+
+    #Plot Loss
+    plt.plot(range(len(loss_epoch_dis)),loss_epoch_dis,'r',range(len(loss_epoch_dis)),loss_epoch_gen,'g')
+    plt.title("Loss vs Epochs")
+    plt.legend(['Discriminator','Generator'])
+    plt.show()
+
+    #Save model
+    torch.save({
+            'generator_state_dict': gen.state_dict(),
+            'discriminator_state_dict': dis.state_dict(),
+            'generator_adam_state_dict': optim_gen.state_dict(),
+            'discriminator_adam_state_dict': optim_dis.state_dict(),
+            }, 'p1_gan_model.pth')
+
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ import numpy as np
 from dataset import AirfoilDataset
 from vae import VAE
 from utils import *
+import matplotlib.pyplot as plt
 
 def loss_func(recon_x, label, mu, logvar):
     bce = F.mse_loss(recon_x,label,reduction="sum")
@@ -42,6 +43,7 @@ def main():
 
     # define your loss function here
     # loss = ?
+    loss_epoch = []
 
     # define optimizer for discriminator and generator separately
     optim = Adam(vae.parameters(), lr=lr)
@@ -68,6 +70,7 @@ def main():
                 print("Epoch: [{}/{}], Batch: {}, loss: {}".format(
                     epoch, num_epochs, n_batch, loss.item()))
         #scheduler.step(loss.item())
+        loss_epoch.append(loss.item())
 
     # test trained VAE model
     num_samples = 100
@@ -92,6 +95,19 @@ def main():
     plot_airfoils(airfoil_x, real_airfoils)
     plot_airfoils(airfoil_x, recon_airfoils)
     plot_airfoils(airfoil_x, gen_airfoils)
+
+    #Plot loss vs epoch
+    plt.plot(range(len(loss_epoch)),loss_epoch)
+    plt.title("Loss vs Epoch")
+    plt.legend(["VAE Loss"])
+    plt.show()
+
+    #Save model
+    torch.save({
+        'vae_state_dict':vae.state_dict(),
+        'vae_optim_state_dict':optim.state_dict(),
+    }, 'p1_vae_model.pth')
+
     
 
 if __name__ == "__main__":

@@ -20,3 +20,7 @@ Video-Upscaling/
 HW 3/code_q1_template/__pycache__/
 
 HW 3/code_q1_template/airfoils/
+
+data/Cora/Cora/processed/
+
+data/Cora/Cora/raw/

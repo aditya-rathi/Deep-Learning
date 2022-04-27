@@ -125,6 +125,12 @@ def main():
 			hist["train_loss"].append(train_loss)
 			hist["test_loss"].append(test_loss)
 			print(f'Epoch: {epoch}, Train loss: {train_loss:.3}, Test loss: {test_loss:.3}')
+
+	#Save model checkpoint
+	torch.save({
+		'model_state_dict':model.state_dict(),
+		'optimizer_state_dict':optimizer.state_dict(),
+		},"p1_model.ckpt")
 	# test on test set to get prediction 
 	with torch.no_grad():
 		prediction = np.zeros(len(test_set))

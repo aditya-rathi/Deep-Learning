@@ -13,6 +13,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 from PIL import Image
+from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
 # The starter code follows the tutorial: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 # we recommend you going through the tutorial before implement DQN algorithm
@@ -20,6 +21,7 @@ from PIL import Image
 
 # define environment, please don't change 
 env = gym.make('CartPole-v1')
+vid = VideoRecorder(env,'test_vid.mp4')
 
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
@@ -61,8 +63,8 @@ class DQN(nn.Module):
         super(DQN, self).__init__()
         # build your model here
         self.fc1 = nn.Linear(in_dim,64)
-        self.fc2 = nn.Linear(64,128)
-        self.fc3 = nn.Linear(128,64)
+        self.fc2 = nn.Linear(64,256)
+        self.fc3 = nn.Linear(256,64)
         self.fc4 = nn.Linear(64,out_dim)
 
     def forward(self, x):
@@ -188,6 +190,12 @@ plt.figure()
 plt.plot(np.arange(len(episode_durations)), episode_durations)
 plt.show()
 
+#save model
+torch.save({
+    'model_state_dict':policy_net.state_dict(),
+    'optimizer_state_dict':optimizer.state_dict()
+},'p2_model.ckpt')
+
 
 # visualize 
 for i in range(10):
@@ -195,7 +203,7 @@ for i in range(10):
     state = torch.from_numpy(state).float().view(1, -1)
     for t in count():
         env.render()
-
+        vid.capture_frame()
         # Select and perform an action
         action = select_action(state)
         new_state, reward, done, _ = env.step(action.item())
@@ -216,3 +224,4 @@ for i in range(10):
             break
 
 env.close()
+vid.close()
